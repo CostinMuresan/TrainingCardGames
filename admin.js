@@ -7,6 +7,7 @@ const $ = (id) => document.getElementById(id);
 
 let currentSession = null; // sesiunea activa curenta a trainerului
 let deckCards = [];
+let controlPreviewBack = {}; // card_id -> bool, doar local pentru trainer (nu afecteaza cursantii)
 
 // ---------- AUTH ----------
 async function checkAuth() {
@@ -28,6 +29,12 @@ $("login-btn").addEventListener("click", async () => {
     return;
   }
   showAdmin();
+});
+
+[$("login-email"), $("login-password")].forEach((input) => {
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("login-btn").click();
+  });
 });
 
 $("logout-btn").addEventListener("click", async () => {
@@ -374,13 +381,15 @@ async function renderControlGrid() {
   deckCards.forEach((c) => {
     const isHighlighted = currentSession.highlighted_card_id === c.id;
     const isFlippable = !!stateMap[c.id];
+    const previewBack = !!controlPreviewBack[c.id];
     const tile = document.createElement("div");
     tile.className = "card-tile" + (isHighlighted ? " highlighted" : "");
     tile.innerHTML = `
-      <img src="${c.front_image_url}" alt="${escapeHtml(c.title)}" />
+      <img src="${previewBack ? c.back_image_url : c.front_image_url}" alt="${escapeHtml(c.title)}" />
       <div class="tile-label">${escapeHtml(c.title)}</div>
       <div class="tile-controls">
-        <button class="toggle-flip" data-zoom>🔍 Mărește</button>
+        <button class="toggle-flip" data-preview>${previewBack ? "Vezi față" : "Vezi verso"}</button>
+        <button class="toggle-flip" data-zoom>🔍</button>
         <button class="toggle-flip ${isFlippable ? "active" : ""}" data-toggle="${c.id}">
           ${isFlippable ? "Flip activat" : "Permite răsturnarea"}
         </button>
@@ -388,9 +397,14 @@ async function renderControlGrid() {
     `;
     tile.querySelector("img").addEventListener("click", () => highlightCard(c.id));
     tile.querySelector(".tile-label").addEventListener("click", () => highlightCard(c.id));
+    tile.querySelector("[data-preview]").addEventListener("click", (e) => {
+      e.stopPropagation();
+      controlPreviewBack[c.id] = !previewBack;
+      renderControlGrid();
+    });
     tile.querySelector("[data-zoom]").addEventListener("click", (e) => {
       e.stopPropagation();
-      openLightbox(c.front_image_url);
+      openLightbox(previewBack ? c.back_image_url : c.front_image_url);
     });
     tile.querySelector("[data-toggle]").addEventListener("click", async (e) => {
       e.stopPropagation();
