@@ -78,6 +78,7 @@ function renderDeck() {
     `;
     const img = tile.querySelector("img");
     let showingBack = false;
+    img.addEventListener("click", () => openLightbox(img.src));
     tile.querySelector(".show-back-btn").addEventListener("click", (e) => {
       e.stopPropagation();
       showingBack = !showingBack;
@@ -99,6 +100,12 @@ function escapeHtml(str) {
   d.textContent = str || "";
   return d.innerHTML;
 }
+
+function openLightbox(src) {
+  $("lightbox-img").src = src;
+  $("lightbox").style.display = "flex";
+}
+$("lightbox").addEventListener("click", () => ($("lightbox").style.display = "none"));
 
 // ---------- ADD CARD MODAL ----------
 $("add-card-btn").addEventListener("click", () => {
@@ -343,7 +350,7 @@ function renderSessionPanel() {
     $("session-code-badge").textContent = currentSession.session_code;
     const link = sessionLink(currentSession.session_code);
     $("session-link-text").textContent = link;
-    QRCode.toCanvas($("qr-canvas"), link, { width: 180 });
+    $("qr-canvas").src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
     renderControlGrid();
   } else {
     $("no-session-box").style.display = "block";

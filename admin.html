@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Admin · Joc biasuri cognitive</title>
 <link rel="stylesheet" href="style.css" />
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -43,7 +42,7 @@
           <button class="btn outline" id="copy-link-btn" style="padding:4px 10px; font-size:12px;">Copiază</button>
         </div>
         <div style="margin-top:14px; display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
-          <canvas id="qr-canvas"></canvas>
+          <img id="qr-canvas" alt="Cod QR sesiune" style="width:200px; height:200px; border-radius:8px; border:1px solid var(--parchment-dark); background:#fff;" />
           <div style="font-size:13px; color:var(--grey); max-width:280px;">
             Afișează acest cod QR pe ecranul partajat, sau trimite link-ul pe Teams / Zoom cursanților.
           </div>
@@ -124,6 +123,10 @@
       <button class="btn" id="bulk-save-btn" disabled>Încarcă toate cardurile</button>
     </div>
   </div>
+</div>
+
+<div id="lightbox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:60; align-items:center; justify-content:center; padding:30px; cursor:zoom-out;">
+  <img id="lightbox-img" style="max-width:90vw; max-height:90vh; border-radius:12px;" />
 </div>
 
 <script type="module" src="admin.js"></script>
