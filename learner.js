@@ -68,6 +68,18 @@ function render() {
     const isFlipped = !!flippedLocal[c.id];
 
     const wrap = document.createElement("div");
+    wrap.className = "flip-card-wrap";
+
+    const zoomBtn = document.createElement("button");
+    zoomBtn.className = "zoom-btn";
+    zoomBtn.textContent = "🔍";
+    zoomBtn.title = "Vezi mărit";
+    zoomBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const frontDisplay = c.initial_face === "back" ? c.back_image_url : c.front_image_url;
+      const backDisplay = c.initial_face === "back" ? c.front_image_url : c.back_image_url;
+      openLightbox(isFlipped ? backDisplay : frontDisplay);
+    });
 
     const flip = document.createElement("div");
     flip.className = "flip-card" + (isHighlighted ? " is-highlighted" : "") + (canFlip ? " can-flip" : "") + (isFlipped ? " flipped" : "");
@@ -88,6 +100,7 @@ function render() {
     label.className = "card-title";
     label.textContent = c.title;
 
+    wrap.appendChild(zoomBtn);
     wrap.appendChild(flip);
     wrap.appendChild(label);
 
@@ -104,6 +117,12 @@ function render() {
     grid.appendChild(wrap);
   });
 }
+
+function openLightbox(src) {
+  $("learner-lightbox-img").src = src;
+  $("learner-lightbox").style.display = "flex";
+}
+$("learner-lightbox").addEventListener("click", () => ($("learner-lightbox").style.display = "none"));
 
 function subscribeRealtime() {
   supabase

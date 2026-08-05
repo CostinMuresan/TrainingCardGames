@@ -380,6 +380,7 @@ async function renderControlGrid() {
       <img src="${c.front_image_url}" alt="${escapeHtml(c.title)}" />
       <div class="tile-label">${escapeHtml(c.title)}</div>
       <div class="tile-controls">
+        <button class="toggle-flip" data-zoom>🔍 Mărește</button>
         <button class="toggle-flip ${isFlippable ? "active" : ""}" data-toggle="${c.id}">
           ${isFlippable ? "Flip activat" : "Permite răsturnarea"}
         </button>
@@ -387,6 +388,10 @@ async function renderControlGrid() {
     `;
     tile.querySelector("img").addEventListener("click", () => highlightCard(c.id));
     tile.querySelector(".tile-label").addEventListener("click", () => highlightCard(c.id));
+    tile.querySelector("[data-zoom]").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openLightbox(c.front_image_url);
+    });
     tile.querySelector("[data-toggle]").addEventListener("click", async (e) => {
       e.stopPropagation();
       await supabase.from("session_card_state").upsert({

@@ -228,6 +228,39 @@ input, textarea, select {
 .bulk-pair-row .pair-warning { font-size: 11px; color: var(--red); }
 code { background: var(--parchment-dark); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
+.flip-card-wrap { position: relative; }
+.zoom-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  background: rgba(33,58,46,0.85);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.zoom-btn:hover { background: var(--green-deep); }
+
+#learner-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 60;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  cursor: zoom-out;
+}
+#learner-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 12px;
+}
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;
