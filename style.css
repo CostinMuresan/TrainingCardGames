@@ -207,6 +207,21 @@ input, textarea, select {
 
 #qr-canvas { border-radius: 8px; border: 1px solid var(--parchment-dark); }
 
+.bulk-pair-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--parchment-dark);
+  border-radius: 8px;
+  background: var(--parchment);
+}
+.bulk-pair-row img { width: 44px; height: 58px; object-fit: cover; border-radius: 4px; background: var(--parchment-dark); }
+.bulk-pair-row input { flex: 1; min-width: 0; }
+.bulk-pair-row.incomplete { border-color: var(--red); }
+.bulk-pair-row .pair-warning { font-size: 11px; color: var(--red); }
+code { background: var(--parchment-dark); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;

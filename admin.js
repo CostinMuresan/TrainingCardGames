@@ -173,6 +173,107 @@ $("modal-save-btn").addEventListener("click", async () => {
   }
 });
 
+// ---------- BULK UPLOAD ----------
+let bulkPairs = []; // { key, order, title, frontFile, backFile }
+
+$("bulk-upload-btn").addEventListener("click", () => {
+  bulkPairs = [];
+  $("bulk-file-input").value = "";
+  $("bulk-preview").innerHTML = "";
+  $("bulk-error").textContent = "";
+  $("bulk-progress").textContent = "";
+  $("bulk-save-btn").disabled = true;
+  $("bulk-modal").style.display = "flex";
+});
+$("bulk-cancel-btn").addEventListener("click", () => ($("bulk-modal").style.display = "none"));
+
+function titleFromSlug(slug) {
+  const clean = slug.replace(/^\d+-/, "").replace(/-/g, " ").trim();
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+$("bulk-file-input").addEventListener("change", () => {
+  const files = Array.from($("bulk-file-input").files);
+  const groups = {}; // key (fara -fata/-verso si extensie) -> {front, back, order}
+
+  files.forEach((file) => {
+    const name = file.name.replace(/\.[^.]+$/, ""); // fara extensie
+    const m = name.match(/^(.*)-(fata|verso|front|back)$/i);
+    if (!m) return; // fisier care nu respecta formatul, il ignoram
+    const key = m[1];
+    const side = m[2].toLowerCase();
+    if (!groups[key]) {
+      const orderMatch = key.match(/^(\d+)/);
+      groups[key] = { key, order: orderMatch ? parseInt(orderMatch[1], 10) : 999, title: titleFromSlug(key) };
+    }
+    if (side === "fata" || side === "front") groups[key].frontFile = file;
+    else groups[key].backFile = file;
+  });
+
+  bulkPairs = Object.values(groups).sort((a, b) => a.order - b.order);
+  renderBulkPreview();
+});
+
+function renderBulkPreview() {
+  const box = $("bulk-preview");
+  box.innerHTML = "";
+  if (bulkPairs.length === 0) {
+    box.innerHTML = `<p style="font-size:13px; color:var(--grey);">Niciun fișier recunoscut. Verifică denumirile (ex: 01-titlu-fata.jpg).</p>`;
+    $("bulk-save-btn").disabled = true;
+    return;
+  }
+  let allComplete = true;
+  bulkPairs.forEach((p) => {
+    const complete = !!p.frontFile && !!p.backFile;
+    if (!complete) allComplete = false;
+    const row = document.createElement("div");
+    row.className = "bulk-pair-row" + (complete ? "" : " incomplete");
+    row.innerHTML = `
+      <img src="${p.frontFile ? URL.createObjectURL(p.frontFile) : ""}" />
+      <img src="${p.backFile ? URL.createObjectURL(p.backFile) : ""}" />
+      <input data-key="${p.key}" value="${escapeHtml(p.title)}" />
+      ${complete ? "" : `<span class="pair-warning">lipsește ${p.frontFile ? "verso" : "față"}</span>`}
+    `;
+    row.querySelector("input").addEventListener("input", (e) => {
+      p.title = e.target.value;
+    });
+    box.appendChild(row);
+  });
+  $("bulk-save-btn").disabled = !allComplete;
+  $("bulk-error").textContent = allComplete ? "" : "Completează perechile lipsă sau elimină fișierele orfane înainte de a încărca.";
+}
+
+$("bulk-save-btn").addEventListener("click", async () => {
+  $("bulk-save-btn").disabled = true;
+  $("bulk-error").textContent = "";
+  let done = 0;
+  try {
+    for (const p of bulkPairs) {
+      $("bulk-progress").textContent = `Se încarcă ${done + 1}/${bulkPairs.length}: ${p.title}...`;
+      const frontUrl = await uploadImage(p.frontFile);
+      const backUrl = await uploadImage(p.backFile);
+      const { error } = await supabase.from("cards").insert({
+        title: p.title,
+        front_image_url: frontUrl,
+        back_image_url: backUrl,
+        initial_face: "front",
+        flippable_default: true,
+        explanation: "",
+        game_id: GAME_ID,
+        order_index: p.order,
+      });
+      if (error) throw error;
+      done++;
+    }
+    $("bulk-progress").textContent = `Gata! ${done} carduri încărcate.`;
+    await loadDeck();
+    setTimeout(() => ($("bulk-modal").style.display = "none"), 1200);
+  } catch (err) {
+    $("bulk-error").textContent = `Eroare la cardul ${done + 1}: ${err.message}`;
+    $("bulk-save-btn").disabled = false;
+  }
+});
+
 // ---------- SESSION ----------
 function randomCode(len = 6) {
   const chars = "abcdefghjkmnpqrstuvwxyz23456789";
