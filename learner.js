@@ -11,6 +11,7 @@ let session = null;
 let cards = [];
 let flippableMap = {};   // card_id -> bool, sincronizat de la trainer
 let flippedLocal = {};   // card_id -> bool, doar local, la acest user
+let lastScrolledHighlight = undefined; // ultimul highlighted_card_id pentru care s-a facut scroll
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -69,6 +70,7 @@ function render() {
 
     const wrap = document.createElement("div");
     wrap.className = "flip-card-wrap";
+    wrap.dataset.cardId = c.id;
 
     const zoomBtn = document.createElement("button");
     zoomBtn.className = "zoom-btn";
@@ -116,6 +118,19 @@ function render() {
 
     grid.appendChild(wrap);
   });
+
+  scrollToHighlighted();
+}
+
+function scrollToHighlighted() {
+  if (!session || !session.highlighted_card_id) return;
+  if (session.highlighted_card_id === lastScrolledHighlight) return;
+  lastScrolledHighlight = session.highlighted_card_id;
+  $("learner-lightbox").style.display = "none"; // inchide zoom-ul daca era deschis pe un card vechi
+  const el = document.querySelector(`[data-card-id="${session.highlighted_card_id}"]`);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  }
 }
 
 function openLightbox(src) {
