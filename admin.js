@@ -80,7 +80,7 @@ function renderDeck() {
     const tile = document.createElement("div");
     tile.className = "card-tile";
     tile.innerHTML = `
-      ${locked ? "" : `<div style="padding:8px 8px 0; text-align:left;"><input type="checkbox" data-select="${c.id}" style="width:auto;" /></div>`}
+      ${locked ? "" : `<div style="padding:8px 8px 0; text-align:left;"><input type="checkbox" data-select="${c.id}" style="width:auto;" ${selectedCardIds.has(c.id) ? "checked" : ""} /></div>`}
       <img src="${c.front_image_url}" alt="față" />
       <div class="tile-label">${escapeHtml(c.title)}</div>
       <div class="tile-controls">
@@ -124,6 +124,7 @@ function renderDeck() {
 function updateBulkBar() {
   $("selected-count").textContent = selectedCardIds.size;
   $("bulk-delete-btn").disabled = selectedCardIds.size === 0;
+  $("select-all-btn").textContent = selectedCardIds.size === deckCards.length && deckCards.length > 0 ? "Deselectează tot" : "Selectează tot";
 }
 
 $("select-all-btn").addEventListener("click", () => {
