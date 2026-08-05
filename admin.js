@@ -72,6 +72,7 @@ function renderDeck() {
     grid.innerHTML = `<p style="color:var(--grey); font-size:14px;">Niciun card încă. Adaugă primul card.</p>`;
     return;
   }
+  const locked = !!currentSession;
   deckCards.forEach((c) => {
     const tile = document.createElement("div");
     tile.className = "card-tile";
@@ -80,7 +81,7 @@ function renderDeck() {
       <div class="tile-label">${escapeHtml(c.title)}</div>
       <div class="tile-controls">
         <button class="toggle-flip show-back-btn">Vezi verso</button>
-        <button class="toggle-flip" style="border-color:var(--red); color:var(--red);" data-delete="${c.id}">Șterge</button>
+        ${locked ? "" : `<button class="toggle-flip" style="border-color:var(--red); color:var(--red);" data-delete="${c.id}">Șterge</button>`}
       </div>
     `;
     const img = tile.querySelector("img");
@@ -92,14 +93,23 @@ function renderDeck() {
       img.src = showingBack ? c.back_image_url : c.front_image_url;
       e.target.textContent = showingBack ? "Vezi față" : "Vezi verso";
     });
-    tile.querySelector("[data-delete]").addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (!confirm(`Ștergi cardul „${c.title}”?`)) return;
-      await supabase.from("cards").delete().eq("id", c.id);
-      await loadDeck();
-    });
+    if (!locked) {
+      tile.querySelector("[data-delete]").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Ștergi cardul „${c.title}”?`)) return;
+        await supabase.from("cards").delete().eq("id", c.id);
+        await loadDeck();
+      });
+    }
     grid.appendChild(tile);
   });
+}
+
+function syncDeckLockUI() {
+  const locked = !!currentSession;
+  $("deck-edit-actions").style.display = locked ? "none" : "flex";
+  $("deck-locked-note").style.display = locked ? "block" : "none";
+  renderDeck();
 }
 
 function escapeHtml(str) {
@@ -350,6 +360,7 @@ function sessionLink(code) {
 }
 
 function renderSessionPanel() {
+  syncDeckLockUI();
   if (currentSession) {
     $("no-session-box").style.display = "none";
     $("active-session-box").style.display = "block";

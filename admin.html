@@ -60,11 +60,14 @@
     <div class="panel">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <h3 style="margin:0;">Deck-ul de carduri (MVP)</h3>
-        <div style="display:flex; gap:8px;">
+        <div id="deck-edit-actions" style="display:flex; gap:8px;">
           <button class="btn gold" id="bulk-upload-btn">Încarcă în bulk</button>
           <button class="btn" id="add-card-btn">+ Card nou</button>
         </div>
       </div>
+      <p id="deck-locked-note" style="display:none; font-size:13px; color:var(--red); margin:-4px 0 12px;">
+        🔒 Editarea deck-ului e dezactivată cât timp sesiunea e activă, ca să eviți modificări accidentale în timpul unui training live. Încheie sesiunea pentru a adăuga, încărca sau șterge carduri.
+      </p>
       <div class="card-grid" id="deck-grid"></div>
     </div>
   </main>
