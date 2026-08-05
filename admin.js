@@ -8,6 +8,8 @@ const $ = (id) => document.getElementById(id);
 let currentSession = null; // sesiunea activa curenta a trainerului
 let deckCards = [];
 let controlPreviewBack = {}; // card_id -> bool, doar local pentru trainer (nu afecteaza cursantii)
+let selectedCardIds = new Set(); // pentru stergere in bulk
+let editingCard = null; // cardul editat curent (null = card nou)
 
 // ---------- AUTH ----------
 async function checkAuth() {
@@ -68,6 +70,7 @@ async function loadDeck() {
 function renderDeck() {
   const grid = $("deck-grid");
   grid.innerHTML = "";
+  $("deck-bulk-bar").style.display = !currentSession && deckCards.length > 0 ? "flex" : "none";
   if (deckCards.length === 0) {
     grid.innerHTML = `<p style="color:var(--grey); font-size:14px;">Niciun card încă. Adaugă primul card.</p>`;
     return;
@@ -77,10 +80,12 @@ function renderDeck() {
     const tile = document.createElement("div");
     tile.className = "card-tile";
     tile.innerHTML = `
+      ${locked ? "" : `<div style="padding:8px 8px 0; text-align:left;"><input type="checkbox" data-select="${c.id}" style="width:auto;" /></div>`}
       <img src="${c.front_image_url}" alt="față" />
       <div class="tile-label">${escapeHtml(c.title)}</div>
       <div class="tile-controls">
         <button class="toggle-flip show-back-btn">Vezi verso</button>
+        ${locked ? "" : `<button class="toggle-flip" data-edit="${c.id}">Editează</button>`}
         ${locked ? "" : `<button class="toggle-flip" style="border-color:var(--red); color:var(--red);" data-delete="${c.id}">Șterge</button>`}
       </div>
     `;
@@ -94,16 +99,50 @@ function renderDeck() {
       e.target.textContent = showingBack ? "Vezi față" : "Vezi verso";
     });
     if (!locked) {
+      tile.querySelector("[data-select]").addEventListener("change", (e) => {
+        if (e.target.checked) selectedCardIds.add(c.id);
+        else selectedCardIds.delete(c.id);
+        updateBulkBar();
+      });
+      tile.querySelector("[data-edit]").addEventListener("click", (e) => {
+        e.stopPropagation();
+        openCardModal(c);
+      });
       tile.querySelector("[data-delete]").addEventListener("click", async (e) => {
         e.stopPropagation();
         if (!confirm(`Ștergi cardul „${c.title}”?`)) return;
         await supabase.from("cards").delete().eq("id", c.id);
+        selectedCardIds.delete(c.id);
         await loadDeck();
       });
     }
     grid.appendChild(tile);
   });
+  updateBulkBar();
 }
+
+function updateBulkBar() {
+  $("selected-count").textContent = selectedCardIds.size;
+  $("bulk-delete-btn").disabled = selectedCardIds.size === 0;
+}
+
+$("select-all-btn").addEventListener("click", () => {
+  const allSelected = selectedCardIds.size === deckCards.length;
+  selectedCardIds.clear();
+  if (!allSelected) deckCards.forEach((c) => selectedCardIds.add(c.id));
+  renderDeck();
+});
+
+$("bulk-delete-btn").addEventListener("click", async () => {
+  if (selectedCardIds.size === 0) return;
+  if (!confirm(`Ștergi definitiv ${selectedCardIds.size} carduri selectate?`)) return;
+  $("bulk-delete-btn").disabled = true;
+  $("bulk-delete-btn").textContent = "Se șterge...";
+  await supabase.from("cards").delete().in("id", Array.from(selectedCardIds));
+  selectedCardIds.clear();
+  await loadDeck();
+  $("bulk-delete-btn").textContent = `Șterge selectate (0)`;
+});
 
 function syncDeckLockUI() {
   const locked = !!currentSession;
@@ -124,19 +163,33 @@ function openLightbox(src) {
 }
 $("lightbox").addEventListener("click", () => ($("lightbox").style.display = "none"));
 
-// ---------- ADD CARD MODAL ----------
-$("add-card-btn").addEventListener("click", () => {
-  $("f-title").value = "";
-  $("f-explanation").value = "";
-  $("f-initial-face").value = "front";
-  $("f-flippable").checked = true;
+// ---------- ADD / EDIT CARD MODAL ----------
+$("add-card-btn").addEventListener("click", () => openCardModal(null));
+
+function openCardModal(card) {
+  editingCard = card;
+  $("modal-title").textContent = card ? `Editează: ${card.title}` : "Card nou";
+  $("f-title").value = card ? card.title : "";
+  $("f-explanation").value = card ? (card.explanation || "") : "";
+  $("f-initial-face").value = card ? card.initial_face : "front";
+  $("f-flippable").checked = card ? card.flippable_default : true;
   $("f-front-file").value = "";
   $("f-back-file").value = "";
-  $("f-front-preview").style.display = "none";
-  $("f-back-preview").style.display = "none";
+  $("label-front").textContent = card ? "Imagine față (lasă gol pentru a păstra actuala)" : "Imagine față";
+  $("label-back").textContent = card ? "Imagine verso (lasă gol pentru a păstra actuala)" : "Imagine verso";
+  if (card) {
+    $("f-front-preview").src = card.front_image_url;
+    $("f-front-preview").style.display = "block";
+    $("f-back-preview").src = card.back_image_url;
+    $("f-back-preview").style.display = "block";
+  } else {
+    $("f-front-preview").style.display = "none";
+    $("f-back-preview").style.display = "none";
+  }
   $("modal-error").textContent = "";
+  $("modal-save-btn").textContent = "Salvează";
   $("card-modal").style.display = "flex";
-});
+}
 $("modal-cancel-btn").addEventListener("click", () => ($("card-modal").style.display = "none"));
 
 function wirePreview(fileInputId, previewId) {
@@ -166,26 +219,30 @@ $("modal-save-btn").addEventListener("click", async () => {
   const backFile = $("f-back-file").files[0];
   $("modal-error").textContent = "";
 
-  if (!title || !frontFile || !backFile) {
-    $("modal-error").textContent = "Titlul și ambele imagini (față + verso) sunt obligatorii.";
+  if (!title || (!editingCard && (!frontFile || !backFile))) {
+    $("modal-error").textContent = "Titlul este obligatoriu" + (editingCard ? "." : ", iar la un card nou, ambele imagini (față + verso) sunt obligatorii.");
     return;
   }
 
   $("modal-save-btn").disabled = true;
   $("modal-save-btn").textContent = "Se salvează...";
   try {
-    const frontUrl = await uploadImage(frontFile);
-    const backUrl = await uploadImage(backFile);
-    const { error } = await supabase.from("cards").insert({
+    const frontUrl = frontFile ? await uploadImage(frontFile) : editingCard.front_image_url;
+    const backUrl = backFile ? await uploadImage(backFile) : editingCard.back_image_url;
+    const payload = {
       title,
       front_image_url: frontUrl,
       back_image_url: backUrl,
       initial_face: $("f-initial-face").value,
       flippable_default: $("f-flippable").checked,
       explanation: $("f-explanation").value.trim(),
-      game_id: GAME_ID,
-      order_index: deckCards.length,
-    });
+    };
+    let error;
+    if (editingCard) {
+      ({ error } = await supabase.from("cards").update(payload).eq("id", editingCard.id));
+    } else {
+      ({ error } = await supabase.from("cards").insert({ ...payload, game_id: GAME_ID, order_index: deckCards.length }));
+    }
     if (error) throw error;
     $("card-modal").style.display = "none";
     await loadDeck();
@@ -435,5 +492,20 @@ async function highlightCard(cardId) {
   currentSession.highlighted_card_id = cardId;
   renderControlGrid();
 }
+
+async function setAllFlippable(value) {
+  if (!currentSession || deckCards.length === 0) return;
+  const btn = value ? $("flip-all-on-btn") : $("flip-all-off-btn");
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = "Se aplică...";
+  const rows = deckCards.map((c) => ({ session_id: currentSession.id, card_id: c.id, is_flippable: value }));
+  await supabase.from("session_card_state").upsert(rows);
+  await renderControlGrid();
+  btn.disabled = false;
+  btn.textContent = original;
+}
+$("flip-all-on-btn").addEventListener("click", () => setAllFlippable(true));
+$("flip-all-off-btn").addEventListener("click", () => setAllFlippable(false));
 
 checkAuth();
