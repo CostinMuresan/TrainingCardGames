@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin · Joc biasuri cognitive</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+
+<div id="login-view" class="login-wrap" style="display:none;">
+  <div class="eyebrow" style="color:var(--gold); font-size:11px; letter-spacing:0.15em; text-transform:uppercase;">Trainer</div>
+  <h2>Autentificare</h2>
+  <label>Email</label>
+  <input id="login-email" type="email" placeholder="trainer@exemplu.ro" />
+  <label>Parolă</label>
+  <input id="login-password" type="password" />
+  <button class="btn" id="login-btn" style="margin-top:18px; width:100%;">Intră</button>
+  <div class="error-msg" id="login-error"></div>
+</div>
+
+<div id="admin-view" style="display:none;">
+  <header class="app-header">
+    <div>
+      <div class="eyebrow">Panou Trainer</div>
+      <h1>Biasuri cognitive · Admin</h1>
+    </div>
+    <button class="btn outline" id="logout-btn" style="border-color:var(--gold-soft); color:var(--gold-soft);">Deconectare</button>
+  </header>
+
+  <main>
+    <div class="panel" id="session-panel">
+      <h3>Sesiune de training</h3>
+      <div id="no-session-box">
+        <p style="color:var(--grey); font-size:14px;">Nu ai nicio sesiune activă. Generează un link nou pentru cursanți.</p>
+        <button class="btn gold" id="create-session-btn">Generează sesiune nouă</button>
+      </div>
+      <div id="active-session-box" style="display:none;">
+        <p style="font-size:14px;">Sesiune activă: <span class="badge" id="session-code-badge"></span></p>
+        <div class="session-link-box">
+          <span id="session-link-text"></span>
+          <button class="btn outline" id="copy-link-btn" style="padding:4px 10px; font-size:12px;">Copiază</button>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+          <canvas id="qr-canvas"></canvas>
+          <div style="font-size:13px; color:var(--grey); max-width:280px;">
+            Afișează acest cod QR pe ecranul partajat, sau trimite link-ul pe Teams / Zoom cursanților.
+          </div>
+        </div>
+        <button class="btn danger" id="end-session-btn" style="margin-top:16px;">Încheie sesiunea</button>
+      </div>
+    </div>
+
+    <div class="panel" id="control-panel" style="display:none;">
+      <h3>Control carduri (sesiune live)</h3>
+      <p style="font-size:13px; color:var(--grey);">Click pe un card pentru a-l evidenția la cursanți. Butonul „Permite răsturnarea” activează flip-ul individual pentru acel card.</p>
+      <div class="card-grid" id="control-grid"></div>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Deck-ul de carduri (MVP)</h3>
+        <button class="btn" id="add-card-btn">+ Card nou</button>
+      </div>
+      <div class="card-grid" id="deck-grid"></div>
+    </div>
+  </main>
+</div>
+
+<div id="card-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:50; align-items:center; justify-content:center; padding:20px;">
+  <div class="panel" style="max-width:480px; width:100%; max-height:90vh; overflow:auto;">
+    <h3 id="modal-title">Card nou</h3>
+    <label style="display:block; font-size:13px; font-weight:600; margin:10px 0 4px;">Titlu</label>
+    <input id="f-title" style="width:100%;" />
+
+    <label style="display:block; font-size:13px; font-weight:600; margin:10px 0 4px;">Imagine față</label>
+    <input id="f-front-file" type="file" accept="image/*" />
+    <img id="f-front-preview" style="max-width:100px; margin-top:6px; border-radius:6px; display:none;" />
+
+    <label style="display:block; font-size:13px; font-weight:600; margin:10px 0 4px;">Imagine verso</label>
+    <input id="f-back-file" type="file" accept="image/*" />
+    <img id="f-back-preview" style="max-width:100px; margin-top:6px; border-radius:6px; display:none;" />
+
+    <label style="display:block; font-size:13px; font-weight:600; margin:10px 0 4px;">Fața afișată inițial</label>
+    <select id="f-initial-face" style="width:100%;">
+      <option value="front">Față</option>
+      <option value="back">Verso</option>
+    </select>
+
+    <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px;">
+      <input id="f-flippable" type="checkbox" checked style="width:auto;" />
+      Flippable implicit (poate fi întors în sesiuni noi)
+    </label>
+
+    <label style="display:block; font-size:13px; font-weight:600; margin:10px 0 4px;">Explicație / detalii</label>
+    <textarea id="f-explanation" rows="3" style="width:100%;"></textarea>
+
+    <div class="error-msg" id="modal-error"></div>
+
+    <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+      <button class="btn outline" id="modal-cancel-btn">Anulează</button>
+      <button class="btn" id="modal-save-btn">Salvează</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>
